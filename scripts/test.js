@@ -112,9 +112,9 @@ const postResults = (testEnv, capabilities, repetition, results, path) => {
 
   if (valid) {
     return client.writeData(
-      `performance-${PRODUCT}-${testEnv}`,
+      `performance-${testEnv}`,
       {
-        PRODUCT,
+        product: PRODUCT,
         platform: capabilities.platform,
         browser: capabilities.browserName,
         os_version: capabilities.os_version,
