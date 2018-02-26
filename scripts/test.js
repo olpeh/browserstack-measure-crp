@@ -29,7 +29,11 @@ const client = createInfluxDbClient(
 const rounds = process.argv[2] ? process.argv[2] : 3,
   repeatViewCount = process.argv[3] ? process.argv[3] : 6,
   endPoints = TEST_ENDPOINTS.split(' '),
-  testEnvs = TEST_ENVS.split(' ');
+  testEnvs = TEST_ENVS.split(' '),
+  maxParallel = 5,
+  maxQueued = 5;
+
+let queuedCount = 0;
 
 console.log(PRODUCT, endPoints, testEnvs, rounds, repeatViewCount);
 
@@ -139,7 +143,8 @@ async function getPerfResults(driver) {
   return perfResults;
 }
 
-async function doRun(testEnv, url, capabilities, path) {
+async function doRun({ testEnv, url, capabilities, path, queued }) {
+  console.log('doRun called', testEnv, url, capabilities, path);
   const driver = new webdriver.Builder()
     .usingServer('https://hub-cloud.browserstack.com/wd/hub')
     .withCapabilities(capabilities)
@@ -159,36 +164,78 @@ async function doRun(testEnv, url, capabilities, path) {
       // Make sure the browser need to load the page again on next round
       driver.get('about:blank');
     }
+    if (queued) {
+      queuedCount--;
+    }
     driver.quit();
   } catch (ex) {
     console.log('Failed on url ', url);
     console.log('With capabilities: ', JSON.stringify(capabilities));
     console.log(ex);
+    if (queued) {
+      queuedCount--;
+    }
     driver.quit();
   }
 }
 
-const main = () => {
+const generateTests = () => {
+  let pending = [];
   for (let i = 0; i < rounds; i++) {
     console.log(`Starting round ${i}`);
-    for (const c of capabilitiesUsed) {
-      console.log(c);
+    for (const capabilities of capabilitiesUsed) {
+      console.log(capabilities);
       for (const testEnv of testEnvs) {
         console.log(
-          `Running test for ${testEnv} on ${c.device} ${c.platform} ${
-            c.os_version
-          } browser ${c.browserName}`
+          `Running test for ${testEnv} on ${capabilities.device} ${
+            capabilities.platform
+          } ${capabilities.os_version} browser ${capabilities.browserName}`
         );
         const basicAuth = BASIC_AUTH ? `${BASIC_AUTH}@` : '';
         const share = '1835316cb9609f93bff9d09f4cd8460e';
         const baseUrl = `https://${basicAuth}${testEnv}`;
         for (const path of endPoints) {
-          const fullUrl = `${baseUrl}/${path}?share=${share}`;
-          doRun(testEnv, fullUrl, c, path);
+          const url = `${baseUrl}/${path}?share=${share}`;
+          pending.push({ testEnv, url, capabilities, path });
+          console.log(pending.length);
         }
       }
     }
   }
+  return pending;
 };
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+async function processTests(tests) {
+  let pending = JSON.parse(JSON.stringify(tests));
+
+  // First run as many parallel tests as possible
+  for (let i = 0; i < maxParallel; i++) {
+    const testToRun = pending.pop();
+    doRun({ ...testToRun, queued: false });
+  }
+
+  // Then queue the rest
+  while (pending.length > 0) {
+    if (queuedCount < maxQueued) {
+      queuedCount++;
+      const testToRun = pending.pop();
+      doRun({ ...testToRun, queued: true });
+    } else {
+      console.log(
+        `Going to sleep for 15s since there are ${queuedCount} tests already in the queue`
+      );
+      await sleep(15000);
+    }
+  }
+  console.log('All tests are now running, pending or done.');
+}
+
+async function main() {
+  const tests = generateTests();
+  await processTests(tests);
+  console.log('Done!');
+}
 
 main();
