@@ -5,10 +5,13 @@ Use Browserstack Hub to measure Critical Rendering Path on your site using real 
 ## Usage
 
 * Make sure you have a Browserstack account available
-* Create a InfluxDb instance @TODO: instructions?
+* Create a [InfluxDb](https://www.influxdata.com/) instance @TODO: instructions?
 * Install dependencies: `yarn`
 * Create `.env` with required parameters. See `.env.sample`
 * Run: `npm start`
+* Visualize results using [Graphana](https://grafana.com/) or similar
+* ???
+* Profit
 
 ## Parameters
 
