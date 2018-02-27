@@ -47,6 +47,7 @@ const capabilities = {
   'browserstack.user': BROWSERSTACK_USERNAME,
   'browserstack.key': BROWSERSTACK_KEY,
   'browserstack.debug': 'true',
+  'browserstack.console': 'verbose',
   project: BROWSERSTACK_PROJECT,
   build: `${BROWSERSTACK_BUILD}-${new Date().toLocaleDateString()}`
 };
@@ -66,6 +67,7 @@ const mobile = (browserName, rest) =>
 const android = args =>
   mobile('chrome', {
     platform: 'ANDROID',
+    browser_version: 64,
     ...args
   });
 
@@ -168,6 +170,8 @@ async function doRun({ testEnv, url, capabilities, path, queued }) {
       postResults(testEnv, capabilities, repetition, perfResults, path);
       // Make sure the browser need to load the page again on next round
       driver.get('about:blank');
+      // In order to make sure the blank page is actually loaded
+      await sleep(1000);
     }
     if (queued) {
       queuedCount--;
