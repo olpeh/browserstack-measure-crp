@@ -238,10 +238,12 @@ async function runAsManyAsPossible(tests) {
         status.team_parallel_sessions_max_allowed -
         status.parallel_sessions_running,
       availableQueue =
-        status.queued_sessions_max_allowed - status.queued_sessions;
+        status.queued_sessions_max_allowed - status.queued_sessions,
+      safetyBuffer = 2,
+      totalUsable = availableParallel + availableQueue - safetyBuffer;
 
     // Run and queue as many parallel tests as possible
-    for (let i = 0; i < availableParallel + availableQueue; i++) {
+    for (let i = 0; i < totalUsable; i++) {
       const testToRun = pending.pop();
       doRun({ ...testToRun, queued: false });
     }
