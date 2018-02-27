@@ -195,7 +195,8 @@ const generateTests = () => {
         const share = '1835316cb9609f93bff9d09f4cd8460e';
         const baseUrl = `https://${basicAuth}${testEnv}`;
         for (const path of endPoints) {
-          const url = `${baseUrl}/${path}?share=${share}`;
+          // Path includes / in the beginning
+          const url = `${baseUrl}${path}?share=${share}`;
           pending.push({ testEnv, url, capabilities, path });
           console.log(pending.length);
         }
