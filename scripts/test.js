@@ -38,6 +38,10 @@ const rounds = process.argv[2] ? process.argv[2] : 3,
   endPoints = TEST_ENDPOINTS.split(' '),
   testEnvs = TEST_ENVS.split(' ');
 
+let totalCount = 0,
+  successfulCount = 0,
+  errorCount = 0;
+
 // Input capabilities
 const capabilities = {
   'browserstack.user': BROWSERSTACK_USERNAME,
@@ -168,6 +172,7 @@ async function doRun({ testEnv, url, capabilities, path, queued }) {
     if (queued) {
       queuedCount--;
     }
+    successfulCount++;
     driver.quit();
   } catch (ex) {
     console.log('Failed on url ', url);
@@ -176,6 +181,7 @@ async function doRun({ testEnv, url, capabilities, path, queued }) {
     if (queued) {
       queuedCount--;
     }
+    errorCount++;
     driver.quit();
   }
 }
@@ -262,9 +268,14 @@ async function processTests(tests) {
 }
 
 async function main() {
+  console.time('Time elapsed');
   const tests = generateTests();
+  totalCount = tests.length;
   await processTests(tests);
-  console.log('Done!');
+  console.log(
+    `Done! Tried to run ${totalCount} tests. ${successfulCount} were successful and ${errorCount} ended up in error.`
+  );
+  console.timeEnd('Time elapsed');
 }
 
 main();
