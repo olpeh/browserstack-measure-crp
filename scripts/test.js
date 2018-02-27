@@ -199,7 +199,6 @@ const generateTests = () => {
           // Path includes / in the beginning
           const url = `${baseUrl}${path}?share=${share}`;
           pending.push({ testEnv, url, capabilities, path });
-          console.log(pending.length);
         }
       }
     }
@@ -234,16 +233,18 @@ async function runAsManyAsPossible(tests) {
   let pending = JSON.parse(JSON.stringify(tests));
 
   const status = await getStatus();
-  const availableParallel =
-      status.team_parallel_sessions_max_allowed -
-      status.parallel_sessions_running,
-    availableQueue =
-      status.queued_sessions_max_allowed - status.queued_sessions;
+  if (status) {
+    const availableParallel =
+        status.team_parallel_sessions_max_allowed -
+        status.parallel_sessions_running,
+      availableQueue =
+        status.queued_sessions_max_allowed - status.queued_sessions;
 
-  // Run and queue as many parallel tests as possible
-  for (let i = 0; i < availableParallel + availableQueue; i++) {
-    const testToRun = pending.pop();
-    doRun({ ...testToRun, queued: false });
+    // Run and queue as many parallel tests as possible
+    for (let i = 0; i < availableParallel + availableQueue; i++) {
+      const testToRun = pending.pop();
+      doRun({ ...testToRun, queued: false });
+    }
   }
   return pending;
 }
