@@ -165,11 +165,11 @@ async function doRun({ testEnv, url, capabilities, path, queued }) {
           capabilities.browserName
         }`
       );
-      driver.get(url);
+      await driver.get(url);
       const perfResults = await getPerfResults(driver);
       postResults(testEnv, capabilities, repetition, perfResults, path);
       // Make sure the browser need to load the page again on next round
-      driver.get('about:blank');
+      await driver.get('about:blank');
       // In order to make sure the blank page is actually loaded
       await sleep(1000);
     }
